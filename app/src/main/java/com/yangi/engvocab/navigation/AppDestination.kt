@@ -11,6 +11,12 @@ sealed interface AppDestination {
         override val route = "books"
     }
 
+    data object BookDetail : AppDestination {
+        const val ARG_BOOK_ID = "bookId"
+        override val route = "books/{$ARG_BOOK_ID}"
+        fun createRoute(bookId: Long) = "books/$bookId"
+    }
+
     data object Review : AppDestination {
         override val route = "review"
     }

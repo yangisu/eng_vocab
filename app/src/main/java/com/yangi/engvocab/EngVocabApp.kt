@@ -54,6 +54,7 @@ fun EngVocabApp(container: AppContainer) {
     ) { paddingValues ->
         AppNavHost(
             navController = navController,
+            container = container,
             modifier = Modifier.padding(paddingValues),
         )
     }
