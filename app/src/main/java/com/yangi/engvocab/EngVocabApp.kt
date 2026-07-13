@@ -27,7 +27,7 @@ private val bottomDestinations = listOf(
 )
 
 @Composable
-fun EngVocabApp() {
+fun EngVocabApp(container: AppContainer) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route

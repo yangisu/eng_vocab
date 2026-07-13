@@ -12,7 +12,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             EngVocabTheme {
-                EngVocabApp()
+                EngVocabApp((application as VocabularyApplication).container)
             }
         }
     }
