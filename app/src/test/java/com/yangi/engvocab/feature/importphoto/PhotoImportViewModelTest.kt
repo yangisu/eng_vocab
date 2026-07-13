@@ -100,6 +100,27 @@ class PhotoImportViewModelTest {
         assertEquals("설정에서 OpenAI API 키를 먼저 저장하세요.", vm.state.value.error)
     }
 
+    @Test
+    fun savedStateRestoresSelectedBookAndExistingPhotoPreview() = runTest {
+        val path = Path.of("cache/restored.jpg")
+        val vm = PhotoImportViewModel(
+            repository = FakeVocabularyRepository(),
+            aiService = FakeVocabularyAiService(),
+            imagePreparation = ImagePreparation { ImageInput("image/jpeg", "YWJj") },
+            tempImages = fakeTempImages(mutableListOf()),
+            savedStateHandle = SavedStateHandle(
+                mapOf(
+                    "photo_import_book_id" to 7L,
+                    "photo_import_path" to path.toString(),
+                ),
+            ),
+        )
+
+        assertEquals(7L, vm.state.value.selectedBookId)
+        assertEquals(path, vm.state.value.imagePath)
+        assertEquals(ImportPhase.PREVIEW, vm.state.value.phase)
+    }
+
     private fun fakeTempImages(deleted: MutableList<Path>) = object : TempImageLifecycle {
         override fun delete(path: Path?) { if (path != null) deleted.add(path) }
         override fun exists(path: Path): Boolean = true

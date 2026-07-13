@@ -3,6 +3,8 @@ package com.yangi.engvocab.feature.importphoto
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewModelScope
 import com.yangi.engvocab.core.image.ImagePreprocessor
 import com.yangi.engvocab.core.image.TempImageStore
@@ -245,19 +247,25 @@ class PhotoImportViewModel(
         private val aiService: VocabularyAiService,
         private val preprocessor: ImagePreprocessor,
         private val tempImageStore: TempImageStore,
-        private val savedStateHandle: SavedStateHandle,
+        private val initialBookId: Long? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = PhotoImportViewModel(
-            repository,
-            aiService,
-            ImagePreparation { path -> withContext(Dispatchers.IO) { preprocessor.prepare(path) } },
-            object : TempImageLifecycle {
-                override fun delete(path: Path?) = tempImageStore.delete(path)
-                override fun exists(path: Path): Boolean = Files.exists(path)
-            },
-            savedStateHandle,
-        ) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+            val savedStateHandle = extras.createSavedStateHandle()
+            if (savedStateHandle.get<Long>(KEY_BOOK_ID) == null && initialBookId != null) {
+                savedStateHandle[KEY_BOOK_ID] = initialBookId
+            }
+            return PhotoImportViewModel(
+                repository,
+                aiService,
+                ImagePreparation { path -> withContext(Dispatchers.IO) { preprocessor.prepare(path) } },
+                object : TempImageLifecycle {
+                    override fun delete(path: Path?) = tempImageStore.delete(path)
+                    override fun exists(path: Path): Boolean = Files.exists(path)
+                },
+                savedStateHandle,
+            ) as T
+        }
     }
 
     private companion object {

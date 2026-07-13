@@ -19,4 +19,14 @@ class AppNavigationTest {
         composeRule.onNodeWithText("단어장").performClick()
         composeRule.onNodeWithText("내 단어장").assertIsDisplayed()
     }
+    @Test
+    fun homeShortcutsOpenCollectionAndPhotoImport() {
+        composeRule.onNodeWithText("중요 단어 모음").performClick()
+        composeRule.onNodeWithText("중요 단어 모음").assertIsDisplayed()
+
+        composeRule.onNodeWithText("뒤로").performClick()
+        composeRule.onNodeWithText("사진으로 만들기").performClick()
+
+        composeRule.onNodeWithText("사진으로 단어장 만들기").assertIsDisplayed()
+    }
 }

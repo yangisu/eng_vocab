@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.yangi.engvocab.AppContainer
@@ -138,7 +137,7 @@ fun AppNavHost(
                     container.openAiService,
                     container.imagePreprocessor,
                     container.tempImageStore,
-                    SavedStateHandle(if (initialBookId > 0) mapOf("photo_import_book_id" to initialBookId) else emptyMap()),
+                    initialBookId.takeIf { it > 0 },
                 ),
             )
             PhotoImportRoute(importViewModel, container.tempImageStore, navController::popBackStack, { navController.navigate(AppDestination.BookDetail.createRoute(it)) }, { navController.navigate(AppDestination.Study.createIdsRoute(it)) })
