@@ -59,6 +59,16 @@ class RoomVocabularyRepository(
     }
 
     override suspend fun word(id: Long): WordEntry? = vocabularyDao.word(id)?.toDomain()
+    override fun filteredWords(filter: WordFilter, query: String): Flow<List<WordEntry>> {
+        val cleanQuery = normalizeExpression(query)
+        val entities = when (filter) {
+            WordFilter.ALL -> vocabularyDao.observeAllWords(cleanQuery)
+            WordFilter.IMPORTANT -> vocabularyDao.observeAllImportantWords(cleanQuery)
+            WordFilter.WRONG -> vocabularyDao.observeAllWrongWords(cleanQuery)
+        }
+        return entities.map { values -> values.map(WordEntryEntity::toDomain) }
+    }
+
 
     override suspend fun addWord(bookId: Long, word: NewWord): Long = db.withTransaction {
         insertChecked(bookId, word, Instant.now())

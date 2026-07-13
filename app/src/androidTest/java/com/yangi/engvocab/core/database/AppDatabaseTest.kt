@@ -97,4 +97,25 @@ class AppDatabaseTest {
         assertEquals(listOf(wrongId), repository.words(bookId, WordFilter.WRONG).first().map { it.id })
         assertEquals(listOf(wrongId), repository.dueWords(LocalDate.of(2026, 7, 15)).first().map { it.word.id })
     }
+    @Test
+    fun globalImportantAndWrongFiltersCombineBooks() = runTest {
+        val firstBook = repository.createBook("첫째")
+        val secondBook = repository.createBook("둘째")
+        val importantFirst = repository.addWord(firstBook, NewWord("alpha", "알파", isImportant = true))
+        val importantSecond = repository.addWord(secondBook, NewWord("beta", "베타", isImportant = true))
+        val wrongSecond = repository.addWord(secondBook, NewWord("gamma", "감마"))
+        repository.recordReview(
+            wrongSecond, StudyMode.TYPED, "wrong", false, false, false,
+            Instant.parse("2026-07-14T00:00:00Z"), LocalDate.of(2026, 7, 14),
+        )
+
+        assertEquals(
+            setOf(importantFirst, importantSecond),
+            repository.filteredWords(WordFilter.IMPORTANT).first().map { it.id }.toSet(),
+        )
+        assertEquals(
+            listOf(wrongSecond),
+            repository.filteredWords(WordFilter.WRONG).first().map { it.id },
+        )
+    }
 }

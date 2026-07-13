@@ -13,6 +13,7 @@ import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 data class RecordedReview(
@@ -27,6 +28,17 @@ data class RecordedReview(
 class FakeVocabularyRepository : VocabularyRepository {
     private val booksFlow = MutableStateFlow<List<VocabularyBook>>(emptyList())
     private val wordsFlow = MutableStateFlow<List<WordEntry>>(emptyList())
+    private val dueFlow = MutableStateFlow<List<StudyWord>>(emptyList())
+    private val unstudiedFlow = MutableStateFlow(0)
+    private val wrongIdsFlow = MutableStateFlow<Set<Long>>(emptySet())
+
+    var due: List<StudyWord>
+        get() = dueFlow.value
+        set(value) { dueFlow.value = value }
+
+    var unstudied: Int
+        get() = unstudiedFlow.value
+        set(value) { unstudiedFlow.value = value }
     private var nextBookId = 1L
     private var nextWordId = 1L
 
@@ -57,11 +69,20 @@ class FakeVocabularyRepository : VocabularyRepository {
     }
 
     override fun words(bookId: Long, filter: WordFilter, query: String): Flow<List<WordEntry>> =
-        wordsFlow.map { all ->
+        combine(wordsFlow, wrongIdsFlow) { all, wrongIds ->
             all.filter { it.bookId == bookId }
                 .filter { query.isBlank() || it.expression.contains(query, true) || it.meaning.orEmpty().contains(query, true) }
                 .filter { filter != WordFilter.IMPORTANT || it.isImportant }
-                .filter { filter != WordFilter.WRONG }
+                .filter { filter != WordFilter.WRONG || it.id in wrongIds }
+        }
+
+    override fun filteredWords(filter: WordFilter, query: String): Flow<List<WordEntry>> =
+        combine(wordsFlow, wrongIdsFlow) { all, wrongIds ->
+            all.filter {
+                query.isBlank() || it.expression.contains(query, true) ||
+                    it.meaning.orEmpty().contains(query, true)
+            }.filter { filter != WordFilter.IMPORTANT || it.isImportant }
+                .filter { filter != WordFilter.WRONG || it.id in wrongIds }
         }
 
     override suspend fun word(id: Long): WordEntry? = wordsFlow.value.find { it.id == id }
@@ -92,8 +113,10 @@ class FakeVocabularyRepository : VocabularyRepository {
         return ids
     }
 
-    override fun dueWords(today: LocalDate, bookId: Long?): Flow<List<StudyWord>> = MutableStateFlow(emptyList())
-    override fun unstudiedCount(): Flow<Int> = MutableStateFlow(wordsFlow.value.size)
+    override fun dueWords(today: LocalDate, bookId: Long?): Flow<List<StudyWord>> =
+        dueFlow.map { values -> if (bookId == null) values else values.filter { it.word.bookId == bookId } }
+
+    override fun unstudiedCount(): Flow<Int> = unstudiedFlow
 
     override suspend fun recordReview(
         wordId: Long,
@@ -106,6 +129,9 @@ class FakeVocabularyRepository : VocabularyRepository {
         localDate: LocalDate,
     ) {
         recordedReviews += RecordedReview(wordId, mode, submittedAnswer, finalResult, automaticResult, wasOverridden)
+        if (!finalResult) {
+            wrongIdsFlow.value += wordId
+        }
     }
 
     fun existingWords(): List<WordEntry> = wordsFlow.value

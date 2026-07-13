@@ -37,7 +37,7 @@ fun StudyEntryRoute(
             explicitIds.isNotEmpty() -> explicitIds.mapNotNull { id ->
                 repository.word(id)?.let { StudyWord(it, ReviewSnapshot.new()) }
             }
-            dueOnly -> repository.dueWords(LocalDate.now(clock)).first()
+            dueOnly -> repository.dueWords(LocalDate.now(clock), bookId).first()
             bookId != null -> repository.words(bookId, WordFilter.ALL).first().map {
                 StudyWord(it, ReviewSnapshot.new())
             }

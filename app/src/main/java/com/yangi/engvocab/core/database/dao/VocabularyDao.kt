@@ -64,6 +64,15 @@ interface VocabularyDao {
         """,
     )
     fun observeWrongWords(bookId: Long, query: String): Flow<List<WordEntryEntity>>
+    @Query("SELECT * FROM words WHERE :query = '' OR normalizedExpression LIKE '%' || :query || '%' OR COALESCE(meaning, '') LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    fun observeAllWords(query: String): Flow<List<WordEntryEntity>>
+
+
+    @Query("SELECT * FROM words WHERE isImportant = 1 AND (:query = '' OR normalizedExpression LIKE '%' || :query || '%' OR COALESCE(meaning, '') LIKE '%' || :query || '%') ORDER BY updatedAt DESC")
+    fun observeAllImportantWords(query: String): Flow<List<WordEntryEntity>>
+
+    @Query("SELECT w.* FROM words w JOIN review_states r ON r.wordId = w.id WHERE r.totalWrong > 0 AND (:query = '' OR w.normalizedExpression LIKE '%' || :query || '%' OR COALESCE(w.meaning, '') LIKE '%' || :query || '%') ORDER BY (SELECT MAX(l.reviewedAt) FROM review_logs l WHERE l.wordId = w.id AND l.finalResult = 0) DESC")
+    fun observeAllWrongWords(query: String): Flow<List<WordEntryEntity>>
 
     @Query("SELECT * FROM words WHERE id = :id")
     suspend fun word(id: Long): WordEntryEntity?

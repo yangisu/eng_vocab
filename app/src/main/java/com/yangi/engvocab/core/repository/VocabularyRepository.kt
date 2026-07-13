@@ -22,6 +22,7 @@ interface VocabularyRepository {
     suspend fun deleteBook(id: Long)
 
     fun words(bookId: Long, filter: WordFilter, query: String = ""): Flow<List<WordEntry>>
+    fun filteredWords(filter: WordFilter, query: String = ""): Flow<List<WordEntry>>
     suspend fun word(id: Long): WordEntry?
     suspend fun addWord(bookId: Long, word: NewWord): Long
     suspend fun updateWord(word: WordEntry)

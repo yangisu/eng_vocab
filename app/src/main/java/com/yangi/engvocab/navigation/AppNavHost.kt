@@ -15,6 +15,13 @@ import com.yangi.engvocab.feature.books.BookDetailRoute
 import com.yangi.engvocab.feature.books.BookDetailViewModel
 import com.yangi.engvocab.feature.books.BookListRoute
 import com.yangi.engvocab.feature.books.BookListViewModel
+import com.yangi.engvocab.feature.books.FilteredWordsRoute
+import com.yangi.engvocab.feature.books.FilteredWordsViewModel
+import com.yangi.engvocab.feature.home.HomeRoute
+import com.yangi.engvocab.feature.home.HomeViewModel
+import com.yangi.engvocab.feature.review.ReviewRoute
+import com.yangi.engvocab.feature.review.ReviewViewModel
+import com.yangi.engvocab.core.repository.WordFilter
 import com.yangi.engvocab.feature.importphoto.PhotoImportRoute
 import com.yangi.engvocab.feature.importphoto.PhotoImportViewModel
 import com.yangi.engvocab.feature.settings.SettingsRoute
@@ -35,7 +42,20 @@ fun AppNavHost(
         startDestination = AppDestination.Home.route,
         modifier = modifier,
     ) {
-        composable(AppDestination.Home.route) { DestinationTitle("오늘의 학습") }
+        composable(AppDestination.Home.route) {
+            val homeViewModel: HomeViewModel = viewModel(
+                factory = HomeViewModel.Factory(container.vocabularyRepository, container.clock),
+            )
+            HomeRoute(
+                viewModel = homeViewModel,
+                onStartDue = { navController.navigate(AppDestination.Study.createDueRoute()) },
+                onOpenBook = { navController.navigate(AppDestination.BookDetail.createRoute(it)) },
+                onPhotoImport = { navController.navigate(AppDestination.ImportPhoto.createRoute()) },
+                onBooks = { navController.navigate(AppDestination.Books.route) },
+                onImportant = { navController.navigate(AppDestination.Collection.createRoute(WordFilter.IMPORTANT)) },
+                onWrong = { navController.navigate(AppDestination.Collection.createRoute(WordFilter.WRONG)) },
+            )
+        }
         composable(AppDestination.Books.route) {
             val booksViewModel: BookListViewModel = viewModel(
                 factory = BookListViewModel.Factory(container.vocabularyRepository),
@@ -67,7 +87,35 @@ fun AppNavHost(
                 onStudy = { navController.navigate(AppDestination.Study.createBookRoute(it)) },
             )
         }
-        composable(AppDestination.Review.route) { DestinationTitle("복습") }
+        composable(AppDestination.Review.route) {
+            val reviewViewModel: ReviewViewModel = viewModel(
+                factory = ReviewViewModel.Factory(container.vocabularyRepository, container.clock),
+            )
+            ReviewRoute(
+                viewModel = reviewViewModel,
+                onStartAll = { navController.navigate(AppDestination.Study.createDueRoute()) },
+                onStartBook = { navController.navigate(AppDestination.Study.createDueRoute(it)) },
+            )
+        }
+        composable(
+            route = AppDestination.Collection.route,
+            arguments = listOf(
+                navArgument(AppDestination.Collection.ARG_FILTER) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val filter = runCatching {
+                WordFilter.valueOf(requireNotNull(entry.arguments?.getString(AppDestination.Collection.ARG_FILTER)))
+            }.getOrDefault(WordFilter.IMPORTANT)
+            val filteredViewModel: FilteredWordsViewModel = viewModel(
+                key = "collection-$filter",
+                factory = FilteredWordsViewModel.Factory(container.vocabularyRepository, filter),
+            )
+            FilteredWordsRoute(
+                viewModel = filteredViewModel,
+                onBack = navController::popBackStack,
+                onStudy = { navController.navigate(AppDestination.Study.createIdsRoute(it)) },
+            )
+        }
         composable(AppDestination.Settings.route) {
             val settingsViewModel: SettingsViewModel = viewModel(
                 factory = SettingsViewModel.Factory(container.apiKeyStore),
