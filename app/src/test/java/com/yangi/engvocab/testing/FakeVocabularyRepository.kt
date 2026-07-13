@@ -20,6 +20,7 @@ data class RecordedReview(
     val mode: StudyMode,
     val answer: String?,
     val finalResult: Boolean,
+    val automaticResult: Boolean?,
     val overridden: Boolean,
 )
 
@@ -104,7 +105,7 @@ class FakeVocabularyRepository : VocabularyRepository {
         reviewedAt: Instant,
         localDate: LocalDate,
     ) {
-        recordedReviews += RecordedReview(wordId, mode, submittedAnswer, finalResult, wasOverridden)
+        recordedReviews += RecordedReview(wordId, mode, submittedAnswer, finalResult, automaticResult, wasOverridden)
     }
 
     fun existingWords(): List<WordEntry> = wordsFlow.value

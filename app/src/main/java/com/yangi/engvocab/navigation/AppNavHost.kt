@@ -18,6 +18,7 @@ import com.yangi.engvocab.feature.books.BookListViewModel
 import com.yangi.engvocab.feature.importphoto.PhotoImportRoute
 import com.yangi.engvocab.feature.importphoto.PhotoImportViewModel
 import com.yangi.engvocab.feature.settings.SettingsRoute
+import com.yangi.engvocab.feature.study.StudyEntryRoute
 import com.yangi.engvocab.feature.settings.SettingsViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -63,7 +64,7 @@ fun AppNavHost(
                 viewModel = detailViewModel,
                 onBack = navController::popBackStack,
                 onPhotoAdd = { navController.navigate(AppDestination.ImportPhoto.createRoute(it)) },
-                onStudy = { navController.navigate(AppDestination.Study.route) },
+                onStudy = { navController.navigate(AppDestination.Study.createBookRoute(it)) },
             )
         }
         composable(AppDestination.Review.route) { DestinationTitle("복습") }
@@ -92,9 +93,39 @@ fun AppNavHost(
                     SavedStateHandle(if (initialBookId > 0) mapOf("photo_import_book_id" to initialBookId) else emptyMap()),
                 ),
             )
-            PhotoImportRoute(importViewModel, container.tempImageStore, navController::popBackStack, { navController.navigate(AppDestination.BookDetail.createRoute(it)) }, {})
+            PhotoImportRoute(importViewModel, container.tempImageStore, navController::popBackStack, { navController.navigate(AppDestination.BookDetail.createRoute(it)) }, { navController.navigate(AppDestination.Study.createIdsRoute(it)) })
         }
-        composable(AppDestination.Study.route) { DestinationTitle("학습") }
+        composable(
+            route = AppDestination.Study.route,
+            arguments = listOf(
+                navArgument(AppDestination.Study.ARG_BOOK_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+                navArgument(AppDestination.Study.ARG_DUE) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+                navArgument(AppDestination.Study.ARG_IDS) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val bookId = entry.arguments?.getLong(AppDestination.Study.ARG_BOOK_ID)?.takeIf { it > 0 }
+            val due = entry.arguments?.getBoolean(AppDestination.Study.ARG_DUE) ?: false
+            val ids = entry.arguments?.getString(AppDestination.Study.ARG_IDS)
+                .orEmpty().split(',').mapNotNull(String::toLongOrNull)
+            StudyEntryRoute(
+                repository = container.vocabularyRepository,
+                clock = container.clock,
+                bookId = bookId,
+                dueOnly = due,
+                explicitIds = ids,
+                onRetryWrong = { navController.navigate(AppDestination.Study.createIdsRoute(it)) },
+                onDone = navController::popBackStack,
+            )
+        }
     }
 }
 

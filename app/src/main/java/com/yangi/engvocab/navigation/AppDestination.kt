@@ -32,7 +32,13 @@ sealed interface AppDestination {
     }
 
     data object Study : AppDestination {
-        override val route = "study"
+        const val ARG_BOOK_ID = "bookId"
+        const val ARG_DUE = "due"
+        const val ARG_IDS = "ids"
+        override val route = "study?$ARG_BOOK_ID={$ARG_BOOK_ID}&$ARG_DUE={$ARG_DUE}&$ARG_IDS={$ARG_IDS}"
+        fun createBookRoute(bookId: Long) = "study?$ARG_BOOK_ID=$bookId&$ARG_DUE=false&$ARG_IDS="
+        fun createDueRoute() = "study?$ARG_BOOK_ID=-1&$ARG_DUE=true&$ARG_IDS="
+        fun createIdsRoute(ids: List<Long>) = "study?$ARG_BOOK_ID=-1&$ARG_DUE=false&$ARG_IDS=${ids.joinToString(",")}"
     }
 }
 
