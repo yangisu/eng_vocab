@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.yangi.engvocab.AppContainer
@@ -14,6 +15,8 @@ import com.yangi.engvocab.feature.books.BookDetailRoute
 import com.yangi.engvocab.feature.books.BookDetailViewModel
 import com.yangi.engvocab.feature.books.BookListRoute
 import com.yangi.engvocab.feature.books.BookListViewModel
+import com.yangi.engvocab.feature.importphoto.PhotoImportRoute
+import com.yangi.engvocab.feature.importphoto.PhotoImportViewModel
 import com.yangi.engvocab.feature.settings.SettingsRoute
 import com.yangi.engvocab.feature.settings.SettingsViewModel
 import androidx.navigation.NavHostController
@@ -59,7 +62,7 @@ fun AppNavHost(
             BookDetailRoute(
                 viewModel = detailViewModel,
                 onBack = navController::popBackStack,
-                onPhotoAdd = { navController.navigate(AppDestination.ImportPhoto.route) },
+                onPhotoAdd = { navController.navigate(AppDestination.ImportPhoto.createRoute(it)) },
                 onStudy = { navController.navigate(AppDestination.Study.route) },
             )
         }
@@ -70,7 +73,27 @@ fun AppNavHost(
             )
             SettingsRoute(settingsViewModel, onBack = navController::popBackStack)
         }
-        composable(AppDestination.ImportPhoto.route) { DestinationTitle("사진으로 만들기") }
+        composable(
+            route = AppDestination.ImportPhoto.route,
+            arguments = listOf(
+                navArgument(AppDestination.ImportPhoto.ARG_BOOK_ID) {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                },
+            ),
+        ) { entry ->
+            val initialBookId = entry.arguments?.getLong(AppDestination.ImportPhoto.ARG_BOOK_ID) ?: -1L
+            val importViewModel: PhotoImportViewModel = viewModel(
+                factory = PhotoImportViewModel.Factory(
+                    container.vocabularyRepository,
+                    container.openAiService,
+                    container.imagePreprocessor,
+                    container.tempImageStore,
+                    SavedStateHandle(if (initialBookId > 0) mapOf("photo_import_book_id" to initialBookId) else emptyMap()),
+                ),
+            )
+            PhotoImportRoute(importViewModel, container.tempImageStore, navController::popBackStack, { navController.navigate(AppDestination.BookDetail.createRoute(it)) }, {})
+        }
         composable(AppDestination.Study.route) { DestinationTitle("학습") }
     }
 }

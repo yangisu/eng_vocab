@@ -26,7 +26,9 @@ sealed interface AppDestination {
     }
 
     data object ImportPhoto : AppDestination {
-        override val route = "import-photo"
+        const val ARG_BOOK_ID = "bookId"
+        override val route = "import-photo?$ARG_BOOK_ID={$ARG_BOOK_ID}"
+        fun createRoute(bookId: Long) = "import-photo?$ARG_BOOK_ID=$bookId"
     }
 
     data object Study : AppDestination {
