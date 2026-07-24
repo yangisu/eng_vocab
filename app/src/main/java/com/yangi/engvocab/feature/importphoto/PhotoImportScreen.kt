@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -44,7 +45,10 @@ fun PhotoImportRoute(
         CameraCaptureScreen(
             onCaptured = { viewModel.attach(it); showCamera = false },
             onCancel = { showCamera = false },
-            onError = { showCamera = false },
+            onError = { message ->
+                viewModel.reportError(message)
+                showCamera = false
+            },
             modifier = modifier,
         )
     } else {
@@ -54,6 +58,7 @@ fun PhotoImportRoute(
             onSelectBook = viewModel::selectBook,
             onOpenCamera = { showCamera = true },
             onPhotoSelected = viewModel::attach,
+            onPhotoError = viewModel::reportError,
             onAnalyze = viewModel::analyze,
             onUpdateRow = viewModel::updateRow,
             onDuplicateAction = viewModel::setDuplicateAction,
@@ -76,6 +81,7 @@ fun PhotoImportScreen(
     onSelectBook: (Long) -> Unit,
     onOpenCamera: () -> Unit,
     onPhotoSelected: (java.nio.file.Path) -> Unit,
+    onPhotoError: (String) -> Unit,
     onAnalyze: () -> Unit,
     onUpdateRow: (String, String?, String?) -> Unit,
     onDuplicateAction: (String, DuplicateAction) -> Unit,
@@ -100,7 +106,7 @@ fun PhotoImportScreen(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            state.error?.let { Text(it) }
+            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             when (state.phase) {
                 ImportPhase.DESTINATION -> {
                     Text("저장할 단어장을 선택하세요.")
@@ -118,7 +124,7 @@ fun PhotoImportScreen(
                     PhotoPickerButton(
                         tempImageStore = tempImageStore,
                         onSelected = onPhotoSelected,
-                        onError = {},
+                        onError = onPhotoError,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

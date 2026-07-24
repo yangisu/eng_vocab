@@ -102,6 +102,23 @@ class PhotoImportViewModelTest {
     }
 
     @Test
+    fun reportsCameraOrPickerErrorInCurrentStep() = runTest {
+        val vm = PhotoImportViewModel(
+            repository = FakeVocabularyRepository(),
+            aiService = FakeVocabularyAiService(),
+            imagePreparation = ImagePreparation { ImageInput("image/jpeg", "YWJj") },
+            tempImages = fakeTempImages(mutableListOf()),
+            savedStateHandle = SavedStateHandle(),
+        )
+        vm.selectBook(7)
+
+        vm.reportError("카메라 권한이 필요합니다.")
+
+        assertEquals(ImportPhase.SOURCE, vm.state.value.phase)
+        assertEquals("카메라 권한이 필요합니다.", vm.state.value.error)
+    }
+
+    @Test
     fun savedStateRestoresSelectedBookAndExistingPhotoPreview() = runTest {
         val path = Path.of("cache/restored.jpg")
         val vm = PhotoImportViewModel(

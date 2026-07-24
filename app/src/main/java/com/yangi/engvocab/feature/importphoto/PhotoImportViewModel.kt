@@ -119,6 +119,10 @@ class PhotoImportViewModel(
         mutableState.update { it.copy(imagePath = path, phase = ImportPhase.PREVIEW, rows = emptyList(), error = null) }
     }
 
+    fun reportError(message: String) {
+        setError(message)
+    }
+
     fun analyze() {
         val bookId = state.value.selectedBookId ?: return setError("저장할 단어장을 선택하세요.")
         val path = state.value.imagePath ?: return setError("분석할 사진을 선택하세요.")
@@ -293,7 +297,10 @@ private fun AnalyzedEntry.toRow(
 private fun Throwable.toUserMessage(): String = when (this) {
     OpenAiFailure.MissingKey -> "설정에서 OpenAI API 키를 먼저 저장하세요."
     OpenAiFailure.Unauthorized -> "API 키가 올바르지 않습니다."
+    OpenAiFailure.Forbidden -> "이 API 키로 OpenAI 모델에 접근할 수 없습니다."
+    OpenAiFailure.BadRequest -> "OpenAI가 사진 분석 요청을 거부했습니다."
     OpenAiFailure.RateLimited -> "사용량 또는 요청 한도에 도달했습니다. 잠시 후 다시 시도하세요."
+    OpenAiFailure.Server -> "OpenAI 서버에 문제가 발생했습니다. 잠시 후 다시 시도하세요."
     OpenAiFailure.Network -> "네트워크 연결을 확인하고 다시 시도하세요."
     OpenAiFailure.EmptyResult -> "단어를 찾지 못했습니다. 더 가까이에서 수평으로 촬영해 보세요."
     OpenAiFailure.TooManyItems -> "항목이 200개를 넘습니다. 사진을 나누어 촬영하세요."
