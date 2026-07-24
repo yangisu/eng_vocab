@@ -88,6 +88,7 @@ class PhotoImportViewModelTest {
         val vm = PhotoImportViewModel(
             repository,
             aiService = object : com.yangi.engvocab.core.openai.VocabularyAiService {
+                override suspend fun checkConnection() = Unit
                 override suspend fun analyzeImage(input: ImageInput) = throw com.yangi.engvocab.core.openai.OpenAiFailure.MissingKey
                 override suspend fun suggestMeaning(expression: String) = ""
             },

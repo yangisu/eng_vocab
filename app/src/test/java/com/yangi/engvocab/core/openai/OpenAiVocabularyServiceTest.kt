@@ -47,6 +47,18 @@ class OpenAiVocabularyServiceTest {
     }
 
     @Test
+    fun connectionCheckUsesPrivateMinimalResponseRequest() = runTest {
+        server.enqueue(MockResponse(body = """{"id":"resp_test","output":[]}"""))
+
+        service().checkConnection()
+
+        val body = server.takeRequest().body?.utf8().orEmpty()
+        assertTrue(body.contains("\"model\":\"gpt-5.4-mini\""))
+        assertTrue(body.contains("\"store\":false"))
+        assertTrue(body.contains("Reply with OK"))
+    }
+
+    @Test
     fun malformedStructuredOutputRetriesOnlyOnce() = runTest {
         server.enqueue(MockResponse(body = responseFor("{not-json")))
         server.enqueue(MockResponse(body = responseFor(validItems())))
@@ -67,11 +79,13 @@ class OpenAiVocabularyServiceTest {
     }
 
     @Test
-    fun mapsAuthenticationRateLimitAndServerFailuresWithoutRetry() = runTest {
+    fun mapsHttpFailuresWithoutRetry() = runTest {
         val cases = listOf(
             401 to OpenAiFailure.Unauthorized::class.java,
+            403 to OpenAiFailure.Forbidden::class.java,
+            400 to OpenAiFailure.BadRequest::class.java,
             429 to OpenAiFailure.RateLimited::class.java,
-            500 to OpenAiFailure.Network::class.java,
+            500 to OpenAiFailure.Server::class.java,
         )
         for ((code, expected) in cases) {
             server.enqueue(MockResponse(code = code, body = "{}"))
@@ -80,7 +94,7 @@ class OpenAiVocabularyServiceTest {
             }
             assertEquals(expected, failure.javaClass)
         }
-        assertEquals(3, server.requestCount)
+        assertEquals(5, server.requestCount)
     }
 
     @Test

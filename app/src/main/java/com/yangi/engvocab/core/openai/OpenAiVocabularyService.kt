@@ -24,6 +24,12 @@ class OpenAiVocabularyService(
     private val apiKeyProvider: ApiKeyProvider,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) : VocabularyAiService {
+    override suspend fun checkConnection() {
+        val apiKey = apiKeyProvider.load()?.takeIf(String::isNotBlank)
+            ?: throw OpenAiFailure.MissingKey
+        client.createResponse(apiKey, connectionRequest().toString())
+    }
+
     override suspend fun analyzeImage(input: ImageInput): List<AnalyzedEntry> {
         require(input.mimeType.startsWith("image/")) { "이미지 형식이 아닙니다." }
         require(input.base64.isNotBlank()) { "이미지 데이터가 비어 있습니다." }
@@ -48,11 +54,7 @@ class OpenAiVocabularyService(
         parse: (String) -> T,
     ): T {
         repeat(2) { attempt ->
-            val raw = try {
-                client.createResponse(apiKey, request)
-            } catch (_: OpenAiClient.OpenAiInvalidHttpResponse) {
-                throw OpenAiFailure.InvalidResponse
-            }
+            val raw = client.createResponse(apiKey, request)
             try {
                 return parse(raw)
             } catch (failure: OpenAiFailure.InvalidResponse) {
@@ -131,6 +133,12 @@ class OpenAiVocabularyService(
             })
         })
         put("text", format(ANALYSIS_SCHEMA, "vocabulary_entries"))
+    }
+
+    private fun connectionRequest(): JsonObject = buildJsonObject {
+        put("model", MODEL)
+        put("store", false)
+        put("input", "Reply with OK")
     }
 
     private fun meaningRequest(expression: String): JsonObject = buildJsonObject {

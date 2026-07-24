@@ -29,9 +29,11 @@ class OpenAiClient(
                     when {
                         response.isSuccessful -> body
                         response.code == 401 -> throw OpenAiFailure.Unauthorized
+                        response.code == 403 -> throw OpenAiFailure.Forbidden
                         response.code == 429 -> throw OpenAiFailure.RateLimited
-                        response.code in 500..599 -> throw OpenAiFailure.Network
-                        else -> throw OpenAiInvalidHttpResponse
+                        response.code in 400..499 -> throw OpenAiFailure.BadRequest
+                        response.code in 500..599 -> throw OpenAiFailure.Server
+                        else -> throw OpenAiFailure.Network
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -42,8 +44,6 @@ class OpenAiClient(
                 throw OpenAiFailure.Network
             }
         }
-
-    internal data object OpenAiInvalidHttpResponse : Exception()
 
     private companion object {
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
