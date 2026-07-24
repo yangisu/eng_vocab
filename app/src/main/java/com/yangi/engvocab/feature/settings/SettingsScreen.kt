@@ -39,6 +39,7 @@ fun SettingsRoute(
         onInputChange = viewModel::onInputChange,
         onSave = viewModel::save,
         onClear = viewModel::clear,
+        onCheckConnection = viewModel::checkConnection,
         onBack = onBack,
         modifier = modifier,
     )
@@ -51,6 +52,7 @@ fun SettingsScreen(
     onInputChange: (String) -> Unit,
     onSave: () -> Unit,
     onClear: () -> Unit,
+    onCheckConnection: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -76,13 +78,30 @@ fun SettingsScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onSave, enabled = !state.isSaving && state.input.isNotBlank()) {
+                Button(
+                    onClick = onSave,
+                    enabled = !state.isSaving && !state.isChecking && state.input.isNotBlank(),
+                ) {
                     if (state.isSaving) CircularProgressIndicator() else Text("저장")
                 }
-                OutlinedButton(onClick = onClear, enabled = state.isConfigured && !state.isSaving) {
+                OutlinedButton(
+                    onClick = onClear,
+                    enabled = state.isConfigured && !state.isSaving && !state.isChecking,
+                ) {
                     Text("삭제")
                 }
                 OutlinedButton(onClick = onBack) { Text("뒤로") }
+            }
+            OutlinedButton(
+                onClick = onCheckConnection,
+                enabled = state.isConfigured && !state.isSaving && !state.isChecking,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (state.isChecking) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("OpenAI 연결 확인")
+                }
             }
             state.message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

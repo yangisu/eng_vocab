@@ -117,7 +117,10 @@ fun AppNavHost(
         }
         composable(AppDestination.Settings.route) {
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModel.Factory(container.apiKeyStore),
+                factory = SettingsViewModel.Factory(
+                    container.apiKeyStore,
+                    container.openAiService,
+                ),
             )
             SettingsRoute(settingsViewModel, onBack = navController::popBackStack)
         }
