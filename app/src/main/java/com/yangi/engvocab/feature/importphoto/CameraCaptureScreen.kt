@@ -17,9 +17,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -97,9 +106,13 @@ fun CameraCaptureScreen(
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                OutlinedButton(onClick = onCancel) { Text("취소") }
-                Button(onClick = {
+                IconButton(onClick = onCancel) {
+                    Icon(Icons.Rounded.Close, contentDescription = "카메라 닫기", tint = MaterialTheme.colorScheme.onPrimary)
+                }
+                FilledIconButton(
+                    onClick = {
                     val path = tempImageStore.createCapturePath()
                     val options = ImageCapture.OutputFileOptions.Builder(path.toFile()).build()
                     imageCapture.takePicture(
@@ -114,7 +127,15 @@ fun CameraCaptureScreen(
                             }
                         },
                     )
-                }) { Text("촬영") }
+                    },
+                    modifier = Modifier.size(72.dp),
+                ) {
+                    Icon(
+                        Icons.Rounded.CameraAlt,
+                        contentDescription = "사진 촬영",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
             }
         } else if (permissionResolved) {
             Column(
@@ -150,6 +171,7 @@ fun PhotoPickerButton(
         onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
         modifier = modifier,
     ) {
-        Text("사진 선택")
+        Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
+        Text("갤러리에서 선택", Modifier.padding(start = 8.dp))
     }
 }

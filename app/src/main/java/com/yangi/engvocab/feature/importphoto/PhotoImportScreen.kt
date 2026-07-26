@@ -8,16 +8,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,10 +36,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.yangi.engvocab.core.image.TempImageStore
+import com.yangi.engvocab.core.openai.Confidence
+import com.yangi.engvocab.ui.components.AppTopBar
+import com.yangi.engvocab.ui.components.EmptyState
+import com.yangi.engvocab.ui.components.IconActionButton
+import com.yangi.engvocab.ui.components.StatusBanner
 
 @Composable
 fun PhotoImportRoute(
@@ -73,7 +91,6 @@ fun PhotoImportRoute(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoImportScreen(
     state: PhotoImportState,
@@ -95,32 +112,66 @@ fun PhotoImportScreen(
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("사진으로 단어장 만들기") },
-                navigationIcon = { OutlinedButton(onClick = onCancel) { Text("닫기") } },
-            )
-        },
+        topBar = { AppTopBar(title = "사진으로 단어장 만들기", onBack = onCancel) },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            ImportProgress(state.phase)
+            state.error?.let { StatusBanner(it, isError = true) }
             when (state.phase) {
                 ImportPhase.DESTINATION -> {
-                    Text("저장할 단어장을 선택하세요.")
-                    state.books.forEach { book ->
-                        Button(onClick = { onSelectBook(book.id) }, modifier = Modifier.fillMaxWidth()) {
-                            Text(book.name)
+                    Text("저장할 단어장", style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        "사진에서 찾은 단어를 담을 곳을 선택하세요.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (state.books.isEmpty()) {
+                        EmptyState(
+                            icon = Icons.AutoMirrored.Rounded.MenuBook,
+                            title = "단어장이 필요해요",
+                            body = "먼저 내 단어장에서 새 단어장을 만들어 주세요.",
+                        )
+                    } else {
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            items(state.books, key = { it.id }) { book ->
+                                Card(
+                                    onClick = { onSelectBook(book.id) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                    ),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(18.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.AutoMirrored.Rounded.MenuBook,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                        Text(book.name, style = MaterialTheme.typography.titleMedium)
+                                    }
+                                }
+                            }
                         }
                     }
-                    if (state.books.isEmpty()) Text("먼저 단어장을 만들어 주세요.")
                 }
 
                 ImportPhase.SOURCE -> {
-                    Text("사진 가져오기")
-                    Button(onClick = onOpenCamera, modifier = Modifier.fillMaxWidth()) { Text("카메라로 촬영") }
+                    Text("사진 가져오기", style = MaterialTheme.typography.headlineMedium)
+                    Text(
+                        "글자가 선명하고 수평인 사진일수록 정확해요.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(onClick = onOpenCamera, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Rounded.CameraAlt, contentDescription = null)
+                        Text("카메라로 촬영", Modifier.padding(start = 8.dp))
+                    }
                     PhotoPickerButton(
                         tempImageStore = tempImageStore,
                         onSelected = onPhotoSelected,
@@ -130,14 +181,18 @@ fun PhotoImportScreen(
                 }
 
                 ImportPhase.PREVIEW -> {
+                    Text("사진 미리보기", style = MaterialTheme.typography.headlineMedium)
                     state.imagePath?.let { path ->
                         AsyncImage(
                             model = path.toFile(),
                             contentDescription = "분석할 단어 사진",
-                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            modifier = Modifier.fillMaxWidth().weight(1f).clip(MaterialTheme.shapes.large),
                         )
                     }
-                    Button(onClick = onAnalyze, modifier = Modifier.fillMaxWidth()) { Text("AI로 분석") }
+                    Button(onClick = onAnalyze, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Rounded.AutoAwesome, contentDescription = null)
+                        Text("AI로 분석", Modifier.padding(start = 8.dp))
+                    }
                 }
 
                 ImportPhase.ANALYZING, ImportPhase.SAVING -> {
@@ -147,14 +202,35 @@ fun PhotoImportScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         CircularProgressIndicator()
-                        Text(if (state.phase == ImportPhase.ANALYZING) "사진 분석 중…" else "단어 저장 중…")
+                        Text(
+                            if (state.phase == ImportPhase.ANALYZING) "사진에서 단어를 찾고 있어요" else "단어장에 저장하고 있어요",
+                            modifier = Modifier.padding(top = 18.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            "잠시만 기다려 주세요.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
                 ImportPhase.REVIEW -> {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${state.rows.size}개 항목 검토")
-                        OutlinedButton(onClick = onAddRow) { Text("항목 추가") }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column {
+                            Text("분석 결과 검토", style = MaterialTheme.typography.headlineMedium)
+                            Text(
+                                "${state.rows.size}개 항목",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        OutlinedButton(onClick = onAddRow) {
+                            Icon(Icons.Rounded.Add, contentDescription = null)
+                            Text("추가")
+                        }
                     }
                     LazyColumn(
                         modifier = Modifier.weight(1f),
@@ -170,16 +246,55 @@ fun PhotoImportScreen(
                             )
                         }
                     }
-                    Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("단어장에 저장") }
+                    Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Rounded.Save, contentDescription = null)
+                        Text("단어장에 저장", Modifier.padding(start = 8.dp))
+                    }
                 }
 
                 ImportPhase.COMPLETE -> {
-                    Text("${state.savedWordIds.size}개 단어를 저장했습니다.")
-                    Button(onClick = onStudySaved, enabled = state.savedWordIds.isNotEmpty()) { Text("지금 학습하기") }
-                    OutlinedButton(onClick = onOpenBook) { Text("단어장으로 이동") }
+                    EmptyState(
+                        icon = Icons.Rounded.CheckCircle,
+                        title = "${state.savedWordIds.size}개 단어를 저장했어요",
+                        body = "바로 학습하거나 단어장에서 결과를 확인하세요.",
+                    )
+                    Button(
+                        onClick = onStudySaved,
+                        enabled = state.savedWordIds.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("지금 학습하기")
+                    }
+                    OutlinedButton(onClick = onOpenBook, modifier = Modifier.fillMaxWidth()) {
+                        Text("단어장으로 이동")
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ImportProgress(phase: ImportPhase) {
+    val (label, progress) = when (phase) {
+        ImportPhase.DESTINATION -> "단어장 선택" to 0.2f
+        ImportPhase.SOURCE -> "사진 선택" to 0.4f
+        ImportPhase.PREVIEW, ImportPhase.ANALYZING -> "AI 분석" to 0.6f
+        ImportPhase.REVIEW, ImportPhase.SAVING -> "결과 검토" to 0.8f
+        ImportPhase.COMPLETE -> "완료" to 1f
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            Text("${(progress * 100).toInt()}%", color = MaterialTheme.colorScheme.primary)
+        }
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -191,9 +306,36 @@ private fun ImportRowCard(
     onDuplicateAction: (DuplicateAction) -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (row.isLowConfidence) Text("확인 필요")
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                when {
+                    row.isLowConfidence -> AssistChip(
+                        onClick = {},
+                        label = { Text("확인 필요") },
+                        leadingIcon = { Icon(Icons.Rounded.WarningAmber, contentDescription = null) },
+                    )
+                    row.confidence == Confidence.HIGH -> AssistChip(
+                        onClick = {},
+                        label = { Text("높은 신뢰도") },
+                        leadingIcon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null) },
+                    )
+                }
+                androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+                IconActionButton(
+                    icon = Icons.Rounded.DeleteOutline,
+                    contentDescription = "항목 삭제",
+                    onClick = onDelete,
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
             OutlinedTextField(
                 value = row.expression,
                 onValueChange = onExpressionChange,
@@ -207,7 +349,7 @@ private fun ImportRowCard(
                 modifier = Modifier.fillMaxWidth(),
             )
             if (row.duplicateWordId != null) {
-                Text("중복: ${row.duplicateExpression} / ${row.duplicateMeaning.orEmpty()}")
+                StatusBanner("중복 · ${row.duplicateExpression} / ${row.duplicateMeaning.orEmpty()}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { onDuplicateAction(DuplicateAction.SKIP) }) {
                         Text(if (row.duplicateAction == DuplicateAction.SKIP) "✓ 건너뛰기" else "건너뛰기")
@@ -217,8 +359,7 @@ private fun ImportRowCard(
                     }
                 }
             }
-            row.error?.let { Text(it) }
-            OutlinedButton(onClick = onDelete) { Text("항목 삭제") }
+            row.error?.let { StatusBanner(it, isError = true) }
         }
     }
 }
