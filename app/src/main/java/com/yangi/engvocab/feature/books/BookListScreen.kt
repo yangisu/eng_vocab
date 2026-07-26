@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoStories
@@ -130,11 +129,6 @@ fun BookListScreen(
                                 contentDescription = "단어장 삭제",
                                 onClick = { pendingDelete = book.id },
                                 tint = MaterialTheme.colorScheme.error,
-                            )
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowForward,
-                                contentDescription = "단어장 열기",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }

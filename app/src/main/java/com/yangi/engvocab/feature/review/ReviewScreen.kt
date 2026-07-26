@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -84,6 +85,12 @@ fun ReviewScreen(
                             onClick = onStartAll,
                             enabled = state.total > 0,
                             modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                                disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                            ),
                         ) {
                             Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                             Text("전체 복습 시작", Modifier.padding(start = 8.dp))

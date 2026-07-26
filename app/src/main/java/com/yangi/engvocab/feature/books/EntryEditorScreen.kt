@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Edit
@@ -65,7 +66,7 @@ fun EntryEditorScreen(
                     Icon(Icons.Rounded.AutoAwesome, contentDescription = null)
                     Text(
                         if (state.editorLoadingMeaning) "뜻 찾는 중…" else "AI로 뜻 채우기",
-                        Modifier,
+                        Modifier.padding(start = 8.dp),
                     )
                 }
                 state.editorError?.let { StatusBanner(it, isError = true) }

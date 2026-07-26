@@ -145,7 +145,11 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f),
                     ) {
                         if (state.isSaving) {
-                            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                            )
                         } else {
                             Icon(Icons.Rounded.Save, contentDescription = null)
                             Text("저장", Modifier.padding(start = 6.dp))
